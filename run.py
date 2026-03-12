@@ -45,4 +45,5 @@ def create_admin():
         print(f'Error creating admin: {e}')
 
 if __name__ == '__main__':
-    app.run(debug=os.getenv('DEBUG', True), host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(debug=os.getenv('DEBUG', 'False') == 'True', host='0.0.0.0', port=port)
