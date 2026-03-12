@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - EXCESSBITE{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<section class="hero" style="padding: 4rem 1rem; clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);">
+    <div class="container" style="position: relative; z-index: 2;">
+        <a href="{{ url_for('main.home') }}" class="back-btn" style="color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); margin-bottom: 1.5rem;"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        <h1 style="font-family: 'Playfair Display', serif;"><i class="fas fa-envelope"></i> Contact Us</h1>
+        <p style="opacity: 0.9;">We'd love to hear from you</p>
+    </div>
+</section>
+
+<section class="container" style="max-width: 650px; margin: 3rem auto;" data-aos="fade-up">
+    <div class="grid grid-2" style="margin-bottom: 2rem;">
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div style="width: 50px; height: 50px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.2rem;"><i class="fas fa-envelope"></i></div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.3rem;">Email</h3>
+            <p><a href="mailto:info@excessbite.com" style="color: var(--primary); text-decoration: none; font-weight: 500;">info@excessbite.com</a></p>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.2rem;"><i class="fas fa-phone"></i></div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.3rem;">Phone</h3>
+            <p><a href="tel:+91-XXX-XXX-XXXX" style="color: var(--accent); text-decoration: none; font-weight: 500;">+91-XXX-XXX-XXXX</a></p>
+        </div>
+    </div>
+    
+    <div class="card" style="padding: 2.5rem;" data-aos="fade-up" data-aos-delay="100">
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 1.5rem; text-align: center;"><i class="fas fa-paper-plane" style="color: var(--primary);"></i> Send us a message</h3>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem; {% if category == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% else %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                        <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('main.contact') }}">
+            <div class="form-group">
+                <label for="name"><i class="fas fa-user" style="color: var(--primary); margin-right: 0.3rem;"></i> Name</label>
+                <input type="text" id="name" name="name" placeholder="Your full name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope" style="color: var(--primary); margin-right: 0.3rem;"></i> Email</label>
+                <input type="email" id="email" name="email" placeholder="your@email.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="message"><i class="fas fa-comment-dots" style="color: var(--primary); margin-right: 0.3rem;"></i> Message</label>
+                <textarea id="message" name="message" placeholder="Tell us how we can help..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg"><i class="fas fa-paper-plane"></i> Send Message</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

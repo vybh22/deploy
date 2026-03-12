@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users"></i> Manage Users</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_donations') }}"><i class="fas fa-gift"></i> Manage Donations</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_requests') }}"><i class="fas fa-clipboard-list"></i> Manage Requests</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.reports') }}"><i class="fas fa-chart-bar"></i> Reports</a></div>
+            <div class="sidebar-item active"><a href=""><i class="fas fa-history"></i> Audit Log</a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-history" style="color: var(--primary); margin-right: 0.5rem;"></i> Audit Log</h1>
+            <p style="color: var(--text-muted);">All administrative actions are logged for security and compliance.</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Admin</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs.items %}
+                        <tr>
+                            <td>{{ log.admin.full_name }}</td>
+                            <td>{{ log.action }}</td>
+                            <td>{{ log.entity_type }} (ID: {{ log.entity_id }})</td>
+                            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if logs.has_prev %}
+                    <a href="{{ url_for('admin.audit_log', page=logs.prev_num) }}">Previous</a>
+                {% endif %}
+                
+                {% for page_num in logs.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == logs.page %}
+                            <span class="active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('admin.audit_log', page=page_num) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if logs.has_next %}
+                    <a href="{{ url_for('admin.audit_log', page=logs.next_num) }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

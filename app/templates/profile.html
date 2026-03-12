@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="max-width: 720px; margin: 3rem auto;" data-aos="fade-up">
+    <a href="javascript:history.back()" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="card" style="padding: 2.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            {% if current_user.profile_photo %}
+                <img src="{{ url_for('static', filename=current_user.profile_photo) }}" alt="Profile Photo" style="width: 50px; height: 50px; border-radius: 14px; object-fit: cover;">
+            {% else %}
+                <div style="width: 50px; height: 50px; background: var(--gradient-primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem;"><i class="fas fa-user-circle"></i></div>
+            {% endif %}
+            <div>
+                <h1 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; margin: 0;">My Profile</h1>
+                {% if current_user.role == 'logistics' %}
+                    <div style="margin-top: 0.25rem;">
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">🚚 Logistics Volunteer</span>
+                        {% if current_user.is_verified %}
+                            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-left: 0.5rem;">
+                                <i class="fas fa-check-circle"></i> Verified Volunteer
+                            </span>
+                        {% else %}
+                            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: #f59e0b; color: white; padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-left: 0.5rem;">
+                                <i class="fas fa-clock"></i> Pending Verification
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% if current_user.vehicle_details %}
+                        <small style="color: var(--text-muted);">🚚 {{ current_user.vehicle_details }}</small>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="POST">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" value="{{ current_user.username }}" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" value="{{ current_user.email }}" disabled>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" value="{{ current_user.full_name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" value="{{ current_user.phone }}" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea id="address" name="address">{{ current_user.address }}</textarea>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" value="{{ current_user.city }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" value="{{ current_user.role|upper }}" disabled>
+                </div>
+            </div>
+            
+            {% if current_user.role == 'ngo' %}
+            <div class="form-group">
+                <label>Organization Location</label>
+                <p class="text-muted">Click on the map to set your organization's location for deliveries</p>
+                <div id="location-map" style="height: 300px; margin-top: 1rem;"></div>
+                <input type="hidden" id="latitude" name="latitude" value="{{ current_user.latitude }}">
+                <input type="hidden" id="longitude" name="longitude" value="{{ current_user.longitude }}">
+            </div>
+            {% endif %}
+            
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
+    </div>
+</section>
+
+{% if current_user.role == 'ngo' %}
+<script>
+    function initializeLocationMap() {
+        // Check if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet not loaded yet, retrying...');
+            setTimeout(initializeLocationMap, 500);
+            return;
+        }
+        
+        console.log('Initializing location map');
+        DonorUtils.initializeMapPicker('location-map');
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeLocationMap, 100);
+        });
+    } else {
+        setTimeout(initializeLocationMap, 100);
+    }
+</script>
+{% endif %}
+{% endblock %}

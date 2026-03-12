@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Messages - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users"></i> Manage Users</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_donations') }}"><i class="fas fa-gift"></i> Manage Donations</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_requests') }}"><i class="fas fa-clipboard-list"></i> Manage Requests</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.reports') }}"><i class="fas fa-chart-bar"></i> Reports</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.audit_log') }}"><i class="fas fa-history"></i> Audit Log</a></div>
+            <div class="sidebar-item active"><a href="{{ url_for('admin.contact_messages') }}"><i class="fas fa-envelope"></i> Contact Messages</a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-envelope" style="color: var(--primary); margin-right: 0.5rem;"></i> Contact Messages</h1>
+            <p style="color: var(--text-muted);">Messages received from the contact form on the website.</p>
+
+            {% with msgs = get_flashed_messages(with_categories=true) %}
+                {% if msgs %}
+                    {% for category, message in msgs %}
+                        <div class="alert alert-{{ category }}" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem; {% if category == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% else %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if messages.items %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Message</th>
+                        <th>Received</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for msg in messages.items %}
+                        <tr>
+                            <td>{{ msg.name }}</td>
+                            <td><a href="mailto:{{ msg.email }}" style="color: var(--primary); text-decoration: none;">{{ msg.email }}</a></td>
+                            <td style="max-width: 300px; word-wrap: break-word;">{{ msg.message }}</td>
+                            <td>{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.delete_contact_message', message_id=msg.id) }}" style="display:inline;" onsubmit="return confirm('Delete this message?');">
+                                    <button type="submit" class="btn btn-sm" style="background: var(--danger); color: white; border: none; cursor: pointer;"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination" style="margin-top: 1.5rem; display: flex; gap: 0.5rem; justify-content: center;">
+                {% if messages.has_prev %}
+                    <a href="{{ url_for('admin.contact_messages', page=messages.prev_num) }}" class="btn btn-sm btn-primary">Previous</a>
+                {% endif %}
+                <span style="padding: 0.5rem;">Page {{ messages.page }} of {{ messages.pages }}</span>
+                {% if messages.has_next %}
+                    <a href="{{ url_for('admin.contact_messages', page=messages.next_num) }}" class="btn btn-sm btn-primary">Next</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="card" style="text-align: center; padding: 3rem;">
+                <i class="fas fa-inbox" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3>No messages yet</h3>
+                <p style="color: var(--text-muted);">Contact form messages will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

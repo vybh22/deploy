@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Requests - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users"></i> Manage Users <span class="badge" id="badge-manage-users"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_donations') }}"><i class="fas fa-gift"></i> Manage Donations <span class="badge" id="badge-manage-donations"></span></a></div>
+            <div class="sidebar-item active"><a href=""><i class="fas fa-clipboard-list"></i> Manage Requests <span class="badge" id="badge-manage-requests"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_deliveries') }}"><i class="fas fa-truck"></i> Manage Deliveries <span class="badge" id="badge-manage-deliveries"></span></a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-clipboard-list" style="color: var(--primary); margin-right: 0.5rem;"></i> Manage Food Requests</h1>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Food Type</th>
+                        <th>Donor</th>
+                        <th>NGO</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests.items %}
+                        <tr>
+                            <td>{{ req.donation.food_type }}</td>
+                            <td>{{ req.donation.donor.full_name }}</td>
+                            <td>{{ req.ngo.organization_name }}</td>
+                            <td>{{ req.requested_quantity }} packets
+                                <br><small style="color: var(--text-muted);">of {{ req.donation.available_quantity if req.donation.available_quantity is not none else req.donation.quantity }} available</small>
+                            </td>
+                            <td>
+                                <span class="status-badge status-{{ req.status }}">
+                                    {{ req.status|upper }}
+                                </span>
+                            </td>
+                            <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if req.status == 'pending' %}
+                                    <button onclick="AdminUtils.approveRequest({{ req.id }}, '')" class="btn btn-sm btn-primary">Approve</button>
+                                    <button onclick="if(prompt('Reason:')) AdminUtils.rejectRequest({{ req.id }}, prompt('Reason'))" class="btn btn-sm btn-danger">Reject</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if requests.has_prev %}
+                    <a href="{{ url_for('admin.manage_requests', page=requests.prev_num) }}">Previous</a>
+                {% endif %}
+                
+                {% for page_num in requests.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == requests.page %}
+                            <span class="active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('admin.manage_requests', page=page_num) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if requests.has_next %}
+                    <a href="{{ url_for('admin.manage_requests', page=requests.next_num) }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

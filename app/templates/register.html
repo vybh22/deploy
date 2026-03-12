@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block title %}Register - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="max-width: 720px; margin: 3rem auto;" data-aos="fade-up">
+    <a href="{{ url_for('main.home') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    <div class="card" style="padding: 2.5rem;">
+        <div style="text-align: center; margin-bottom: 0.5rem;">
+            <div style="width: 60px; height: 60px; background: var(--gradient-primary); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem; color: white; box-shadow: 0 8px 25px rgba(16,185,129,0.25);">
+                <i class="fas fa-user-plus"></i>
+            </div>
+        </div>
+        <h1 style="text-align: center; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 0.5rem;">Join EXCESSBITE</h1>
+        <p class="auth-subtitle">Create your account and start making a difference</p>
+        
+        {% if errors %}
+            <div class="form-error">
+                <strong>Please fix the following errors:</strong>
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" required>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="role">I am a...</label>
+                    <select id="role" name="role" required onchange="onRoleChange()">
+                        <option value="">Select your role</option>
+                        {% for role in roles %}
+                            <option value="{{ role }}">
+                                {% if role == 'donor' %}Donor
+                                {% elif role == 'ngo' %}NGO
+                                {% elif role == 'logistics' %}Logistics Volunteer
+                                {% elif role == 'admin' %}Admin
+                                {% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city">
+                </div>
+            </div>
+            
+            <!-- Donor Type Section (visible only when role=donor) -->
+            <div id="donor-type-section" style="display: none;">
+                <div class="form-group">
+                    <label for="donor_type"><strong>Donor Type</strong></label>
+                    <select id="donor_type" name="donor_type" onchange="onDonorTypeChange()">
+                        <option value="">Select donor type</option>
+                        <option value="restaurant">🏨 Restaurant / Hotel / Supermarket</option>
+                        <option value="company">🏢 Company / Corporate / Event Organizer</option>
+                        <option value="individual">👤 Individual Donor</option>
+                    </select>
+                </div>
+                
+                <!-- Document Upload (restaurant / company) -->
+                <div id="doc-upload-section" style="display: none;">
+                    <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid var(--primary); background: rgba(16,185,129,0.05);">
+                        <p id="doc-upload-label" style="font-weight: 600; margin-bottom: 0.5rem;">
+                            <i class="fas fa-file-upload" style="color: var(--primary);"></i> Upload Verification Document
+                        </p>
+                        <p id="doc-upload-hint" style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem;"></p>
+                        <input type="file" id="verification_document" name="verification_document" accept=".pdf,.jpg,.jpeg,.png" style="width:100%;">
+                        <small style="color: var(--text-muted);">Accepted: PDF, JPG, PNG (max 5 MB)</small>
+                    </div>
+                </div>
+                
+                <!-- OTP Verification (individual) -->
+                <div id="otp-section" style="display: none;">
+                    <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #f59e0b; background: rgba(245,158,11,0.05);">
+                        <p style="font-weight: 600; margin-bottom: 0.5rem;">
+                            <i class="fas fa-mobile-alt" style="color: #f59e0b;"></i> Phone OTP Verification
+                        </p>
+                        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem;">
+                            Individual donors are verified via phone OTP. Enter your phone number above and click "Send OTP".
+                        </p>
+                        <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                            <button type="button" id="send-otp-btn" class="btn btn-sm btn-primary" onclick="sendOTP()">
+                                <i class="fas fa-paper-plane"></i> Send OTP
+                            </button>
+                        </div>
+                        <div id="otp-input-section" style="display: none; margin-top: 1rem;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" id="otp_code" maxlength="6" placeholder="Enter 6-digit OTP" 
+                                       style="width: 180px; text-align: center; font-size: 1.1rem; letter-spacing: 0.3rem;">
+                                <button type="button" class="btn btn-sm btn-primary" onclick="verifyOTP()">
+                                    <i class="fas fa-check"></i> Verify
+                                </button>
+                            </div>
+                            <div id="otp-status" style="margin-top: 0.5rem;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- NGO Document Upload Section (visible only when role=ngo) -->
+            <div id="ngo-doc-section" style="display: none;">
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #2563eb; background: rgba(37,99,235,0.05);">
+                    <p style="font-weight: 600; margin-bottom: 0.5rem;">
+                        <i class="fas fa-file-upload" style="color: #2563eb;"></i> NGO Verification Document
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem;">
+                        Upload one of the following documents for admin verification:
+                    </p>
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="ngo_document_type"><strong>Document Type</strong></label>
+                        <select id="ngo_document_type" name="ngo_document_type" style="width: 100%;">
+                            <option value="">-- Select document type --</option>
+                            <option value="ngo_registration">📜 NGO Registration Certificate</option>
+                            <option value="trust_society">📋 Trust / Society Registration Document</option>
+                            <option value="80g_12a">📑 80G / 12A Certificate</option>
+                            <option value="government_id">🪪 Government NGO ID</option>
+                        </select>
+                    </div>
+                    <input type="file" name="ngo_document" accept=".pdf,.jpg,.jpeg,.png" style="width:100%;">
+                    <small style="color: var(--text-muted);">Accepted: PDF, JPG, PNG (max 5 MB)</small>
+                </div>
+            </div>
+            
+            <!-- Logistics Volunteer Section (visible only when role=logistics) -->
+            <div id="logistics-section" style="display: none;">
+                <div class="card" style="padding: 1.25rem; margin-bottom: 1rem; border-left: 4px solid #f97316; background: rgba(249,115,22,0.05);">
+                    <p style="font-weight: 600; margin-bottom: 0.75rem;">
+                        <i class="fas fa-id-card" style="color: #f97316;"></i> Logistics Volunteer Verification
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1rem;">
+                        Submit the following details for admin verification. Once approved, you'll receive a <strong>Verified Volunteer</strong> badge.
+                    </p>
+                    
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label for="government_id_type"><strong>Government ID Type</strong></label>
+                        <select id="government_id_type" name="government_id_type" style="width: 100%;">
+                            <option value="">-- Select ID type --</option>
+                            <option value="aadhar">🪪 Aadhar Card</option>
+                            <option value="driving_license">🚗 Driving License</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label><strong>Upload Government ID</strong></label>
+                        <input type="file" name="government_id_document" accept=".pdf,.jpg,.jpeg,.png" style="width:100%;">
+                        <small style="color: var(--text-muted);">Accepted: PDF, JPG, PNG (max 5 MB)</small>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                        <label><strong>Profile Photo</strong></label>
+                        <input type="file" name="profile_photo" accept=".jpg,.jpeg,.png" style="width:100%;">
+                        <small style="color: var(--text-muted);">Accepted: JPG, PNG (max 5 MB)</small>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="vehicle_details"><strong>Vehicle Details</strong> <span style="color: var(--text-muted); font-weight: normal;">(optional)</span></label>
+                        <select id="vehicle_details" name="vehicle_details" style="width: 100%;">
+                            <option value="">-- Select vehicle type --</option>
+                            <option value="Bike">🏍️ Bike</option>
+                            <option value="Car">🚗 Car</option>
+                            <option value="Auto">🛺 Auto Rickshaw</option>
+                            <option value="Van">🚐 Van</option>
+                            <option value="Bicycle">🚲 Bicycle</option>
+                            <option value="On Foot">🚶 On Foot</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Address <button type="button" id="locate-address-btn" class="btn btn-sm btn-primary" style="margin-left: 0.5rem; vertical-align: middle;"><i class="fas fa-map-marker-alt"></i> Locate on Map</button></label>
+                <textarea id="address" name="address" placeholder="Enter your full address and click 'Locate on Map'"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Location <button type="button" id="detect-location-btn" class="btn btn-sm btn-primary" style="margin-left: 0.5rem; vertical-align: middle;"><i class="fas fa-crosshairs"></i> Auto-Detect</button></label>
+                <div id="location-map" style="height: 250px; margin-top: 0.75rem; border: 2px solid var(--border); border-radius: var(--radius);"></div>
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+                <small style="color: var(--text-muted);">Type your address above and click "Locate on Map", or click directly on the map, or use "Auto-Detect"</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="organization_name">Organization Name (for NGO/Logistics)</label>
+                <input type="text" id="organization_name" name="organization_name">
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                    <small>At least 8 characters, 1 uppercase, 1 lowercase, 1 digit, 1 special character</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password_confirm">Confirm Password</label>
+                    <input type="password" id="password_confirm" name="password_confirm" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.92rem;">
+            Already have an account? <a href="{{ url_for('auth.login') }}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Login here</a>
+        </p>
+    </div>
+</section>
+
+<script>
+    let regMap = null;
+    let regMarker = null;
+
+    function initializeRegistrationMap() {
+        if (typeof L === 'undefined' || typeof initMap === 'undefined') {
+            setTimeout(initializeRegistrationMap, 300);
+            return;
+        }
+
+        const mapEl = document.getElementById('location-map');
+        if (!mapEl) return;
+
+        regMap = L.map('location-map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(regMap);
+        setTimeout(() => regMap.invalidateSize(), 200);
+
+        regMap.on('click', function(e) {
+            setMapLocation(e.latlng.lat, e.latlng.lng, true);
+        });
+
+        // Auto-geocode on address/city blur
+        var addressInput = document.getElementById('address');
+        var cityInput = document.getElementById('city');
+        var geocodeTimer = null;
+
+        function autoGeocode() {
+            var address = addressInput.value.trim();
+            var city = cityInput.value.trim();
+            if (address) {
+                var btn = document.getElementById('locate-address-btn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+                btn.disabled = true;
+                geocodeWithNominatim(address, city).then(function(coords) {
+                    if (coords) {
+                        setMapLocation(coords.lat, coords.lng, false);
+                        if (typeof showNotification === 'function') {
+                            showNotification('Location Found', 'Address located on map successfully!', 'success');
+                        }
+                    } else {
+                        if (typeof showNotification === 'function') {
+                            showNotification('Location Not Found', 'Could not locate this address. Try simplifying it or click on the map manually.', 'warning');
+                        }
+                    }
+                    btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Locate on Map';
+                    btn.disabled = false;
+                }).catch(function() {
+                    btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Locate on Map';
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        // "Locate on Map" button click
+        document.getElementById('locate-address-btn').addEventListener('click', autoGeocode);
+
+        // Also geocode on blur as fallback
+        addressInput.addEventListener('blur', function() {
+            // Only auto-geocode on blur if lat/lng is still empty
+            if (!document.getElementById('latitude').value) {
+                autoGeocode();
+            }
+        });
+        cityInput.addEventListener('blur', function() {
+            if (!document.getElementById('latitude').value) {
+                autoGeocode();
+            }
+        });
+
+        // Live geocode as user types (debounced 1.5s)
+        function debouncedGeocode() {
+            clearTimeout(geocodeTimer);
+            geocodeTimer = setTimeout(function() {
+                var address = addressInput.value.trim();
+                if (address.length > 10) {
+                    var city = cityInput.value.trim();
+                    geocodeWithNominatim(address, city).then(function(coords) {
+                        if (coords) setMapLocation(coords.lat, coords.lng, false);
+                    });
+                }
+            }, 1500);
+        }
+        addressInput.addEventListener('input', debouncedGeocode);
+        cityInput.addEventListener('input', debouncedGeocode);
+
+        // Auto-detect button (manual only — no auto-fire)
+        document.getElementById('detect-location-btn').addEventListener('click', function() {
+            detectUserLocation();
+        });
+
+        // Geocode the address on form submit to ensure lat/lng matches the typed address
+        var form = document.querySelector('form[method="POST"]');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                var address = addressInput.value.trim();
+                var city = cityInput.value.trim();
+                var lat = document.getElementById('latitude').value;
+                var lng = document.getElementById('longitude').value;
+                // If user typed an address but lat/lng is empty, try to geocode before submit
+                if (address && (!lat || !lng)) {
+                    e.preventDefault();
+                    geocodeWithNominatim(address, city).then(function(coords) {
+                        if (coords) {
+                            document.getElementById('latitude').value = coords.lat;
+                            document.getElementById('longitude').value = coords.lng;
+                        }
+                        form.submit();
+                    }).catch(function() {
+                        form.submit();
+                    });
+                }
+            });
+        }
+    }
+
+    function setMapLocation(lat, lng, doReverse) {
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        if (regMarker) regMap.removeLayer(regMarker);
+        regMarker = L.marker([lat, lng]).addTo(regMap).bindPopup('Your Location').openPopup();
+        regMap.setView([lat, lng], 15);
+
+        if (doReverse) {
+            // Only fill address from map click if the user hasn't typed one
+            var addressInput = document.getElementById('address');
+            if (!addressInput.value.trim()) {
+                reverseGeocodeNominatim(lat, lng);
+            }
+        }
+    }
+
+    /* ----------  Fetch with timeout (cross-browser safe) ---------- */
+    function fetchWithTimeout(url, ms) {
+        return new Promise(function(resolve, reject) {
+            var timer = setTimeout(function() { reject(new Error('timeout')); }, ms);
+            fetch(url).then(function(r) {
+                clearTimeout(timer);
+                resolve(r);
+            }).catch(function(e) {
+                clearTimeout(timer);
+                reject(e);
+            });
+        });
+    }
+
+    /* ----------  IP geolocation (tries 3 providers) ---------- */
+    function getLocationFromIP() {
+        var providers = [
+            {
+                url: 'https://ipapi.co/json/',
+                parse: function(d) {
+                    return (d.latitude && d.longitude) ?
+                        { lat: d.latitude, lng: d.longitude, city: d.city || '', source: 'ipapi.co' } : null;
+                }
+            },
+            {
+                url: 'https://ipwho.is/',
+                parse: function(d) {
+                    return (d.success !== false && d.latitude) ?
+                        { lat: d.latitude, lng: d.longitude, city: d.city || '', source: 'ipwho.is' } : null;
+                }
+            },
+            {
+                url: 'https://freeipapi.com/api/json',
+                parse: function(d) {
+                    return d.latitude ?
+                        { lat: d.latitude, lng: d.longitude, city: d.cityName || '', source: 'freeipapi' } : null;
+                }
+            }
+        ];
+
+        var idx = 0;
+        function tryNext() {
+            if (idx >= providers.length) return Promise.resolve(null);
+            var p = providers[idx++];
+            return fetchWithTimeout(p.url, 6000)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var result = p.parse(data);
+                    if (result) {
+                        console.log('[Location] IP provider ' + result.source + ':', result.lat, result.lng, result.city);
+                        return result;
+                    }
+                    return tryNext();
+                })
+                .catch(function(e) {
+                    console.warn('[Location] IP provider ' + p.url + ' failed:', e.message);
+                    return tryNext();
+                });
+        }
+        return tryNext();
+    }
+
+    /* ----------  Main detection ---------- */
+    function detectUserLocation() {
+        var btn = document.getElementById('detect-location-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting...';
+
+        // STEP 1: Always start with IP geolocation (fast, reliable on all devices)
+        getLocationFromIP().then(function(ipLoc) {
+
+            if (ipLoc) {
+                // Show IP location immediately so user sees something right away
+                setMapLocation(ipLoc.lat, ipLoc.lng, false);
+                regMap.setView([ipLoc.lat, ipLoc.lng], 13);
+                reverseGeocodeNominatim(ipLoc.lat, ipLoc.lng);
+
+                if (typeof showNotification === 'function') {
+                    showNotification('Location Detected',
+                        'Approximate location detected (' + ipLoc.city + '). Click the map to adjust.',
+                        'success');
+                }
+            }
+
+            // STEP 2: Also try browser GPS to get a more precise fix
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        var lat = position.coords.latitude;
+                        var lng = position.coords.longitude;
+                        var acc = position.coords.accuracy;
+                        console.log('[Location] Browser GPS:', lat, lng, 'accuracy:', acc, 'm');
+
+                        // Only use GPS if it's reasonably accurate (<10km)
+                        if (acc < 10000) {
+                            // If we also got an IP location, check they agree
+                            if (ipLoc) {
+                                var dist = haversineKm(lat, lng, ipLoc.lat, ipLoc.lng);
+                                console.log('[Location] GPS vs IP distance:', dist, 'km');
+                                // Only use GPS if it's within 500km of IP (sanity check)
+                                if (dist > 500) {
+                                    console.warn('[Location] GPS disagrees with IP by ' + dist + 'km — keeping IP location');
+                                    return;
+                                }
+                            }
+                            // GPS looks good — use it (more precise than IP)
+                            setMapLocation(lat, lng, false);
+                            var zoom = acc < 100 ? 17 : acc < 1000 ? 15 : 13;
+                            regMap.setView([lat, lng], zoom);
+                            reverseGeocodeNominatim(lat, lng);
+
+                            if (typeof showNotification === 'function') {
+                                showNotification('Location Updated',
+                                    'Precise location detected (accuracy: ~' + Math.round(acc) + 'm).',
+                                    'success');
+                            }
+                        }
+                    },
+                    function(err) {
+                        console.warn('[Location] Browser GPS error:', err.code, err.message);
+                        // If IP also failed, show a message
+                        if (!ipLoc && typeof showNotification === 'function') {
+                            showNotification('Location',
+                                'Could not auto-detect location. Please type your address or click the map.',
+                                'warning');
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            } else if (!ipLoc) {
+                if (typeof showNotification === 'function') {
+                    showNotification('Location',
+                        'Location not available. Please type your address or click the map.',
+                        'warning');
+                }
+            }
+
+            btn.innerHTML = '<i class="fas fa-crosshairs"></i> Auto-Detect';
+            btn.disabled = false;
+        }).catch(function(e) {
+            console.error('[Location] Detection error:', e);
+            btn.innerHTML = '<i class="fas fa-crosshairs"></i> Auto-Detect';
+            btn.disabled = false;
+        });
+    }
+
+    /* ----------  Haversine (km) ---------- */
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    /* ----------  Nominatim forward geocode ---------- */
+    function geocodeWithNominatim(address, city) {
+        // Build search queries from most specific to most general
+        var queries = [];
+        var fullQuery = city ? address + ', ' + city : address;
+        queries.push(fullQuery);
+
+        // Simplify: remove floor/plot/building details that confuse Nominatim
+        var simplified = address
+            .replace(/\d+(st|nd|rd|th)\s*floor\b/gi, '')
+            .replace(/\bfloor\s*\d+/gi, '')
+            .replace(/\bplot\s*(no\.?:?\s*)?[\w\-]+,?\s*/gi, '')
+            .replace(/\bdoor\s*(no\.?:?\s*)?[\w\-]+,?\s*/gi, '')
+            .replace(/\bflat\s*(no\.?:?\s*)?[\w\-]+,?\s*/gi, '')
+            .replace(/\bblock\s*[\w\-]+,?\s*/gi, '')
+            .replace(/\b\d+[-/]\d+[-/]?\d*,?\s*/g, '')
+            .replace(/,\s*,/g, ',')
+            .replace(/^\s*,\s*/, '')
+            .trim();
+        if (simplified !== address) {
+            queries.push(city ? simplified + ', ' + city : simplified);
+        }
+
+        // Try just the area/locality + city (last 2-3 parts of the address)
+        var parts = address.split(',').map(function(p) { return p.trim(); }).filter(function(p) { return p.length > 0; });
+        if (parts.length > 2) {
+            var areaQuery = parts.slice(-2).join(', ');
+            if (city && areaQuery.toLowerCase().indexOf(city.toLowerCase()) === -1) {
+                areaQuery += ', ' + city;
+            }
+            queries.push(areaQuery);
+        }
+
+        // If city is provided, add it as last resort
+        if (city) {
+            queries.push(city + ', India');
+        }
+
+        // Try each query sequentially until one works
+        var idx = 0;
+        function tryNext() {
+            if (idx >= queries.length) return Promise.resolve(null);
+            var q = queries[idx++];
+            console.log('[Geocode] Trying:', q);
+            return fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1&countrycodes=in', {
+                headers: { 'Accept-Language': 'en' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.length > 0) {
+                    console.log('[Geocode] Found with query:', q);
+                    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                }
+                return tryNext();
+            })
+            .catch(function(e) {
+                console.warn('[Geocode] Failed for "' + q + '":', e);
+                return tryNext();
+            });
+        }
+        return tryNext();
+    }
+
+    /* ----------  Nominatim reverse geocode ---------- */
+    function reverseGeocodeNominatim(lat, lng) {
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&addressdetails=1', {
+            headers: { 'Accept-Language': 'en' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.address) {
+                var a = data.address;
+                var parts = [];
+                if (a.house_number) parts.push(a.house_number);
+                if (a.road) parts.push(a.road);
+                if (a.neighbourhood || a.suburb) parts.push(a.neighbourhood || a.suburb);
+                if (a.city || a.town || a.village) parts.push(a.city || a.town || a.village);
+                if (a.state) parts.push(a.state);
+                if (a.postcode) parts.push(a.postcode);
+
+                if (parts.length) document.getElementById('address').value = parts.join(', ');
+                document.getElementById('city').value = a.city || a.town || a.village || a.county || '';
+            }
+        })
+        .catch(function(e) {
+            console.warn('Nominatim reverse geocode failed:', e);
+        });
+    }
+
+    /* ----------  Init on DOM ready ---------- */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeRegistrationMap, 300);
+        });
+    } else {
+        setTimeout(initializeRegistrationMap, 300);
+    }
+
+    /* ==========  Donor Type & OTP Logic  ========== */
+    function onRoleChange() {
+        var role = document.getElementById('role').value;
+        var donorSection = document.getElementById('donor-type-section');
+        var ngoDocSection = document.getElementById('ngo-doc-section');
+        var logisticsSection = document.getElementById('logistics-section');
+        
+        // Donor section
+        if (role === 'donor') {
+            donorSection.style.display = 'block';
+        } else {
+            donorSection.style.display = 'none';
+            document.getElementById('donor_type').value = '';
+            onDonorTypeChange();
+        }
+        
+        // NGO section
+        if (role === 'ngo') {
+            ngoDocSection.style.display = 'block';
+        } else {
+            ngoDocSection.style.display = 'none';
+            document.getElementById('ngo_document_type').value = '';
+        }
+        
+        // Logistics section
+        if (role === 'logistics') {
+            logisticsSection.style.display = 'block';
+        } else {
+            logisticsSection.style.display = 'none';
+        }
+    }
+
+    function onDonorTypeChange() {
+        var dtype = document.getElementById('donor_type').value;
+        var docSection = document.getElementById('doc-upload-section');
+        var otpSection = document.getElementById('otp-section');
+        var docLabel = document.getElementById('doc-upload-label');
+        var docHint = document.getElementById('doc-upload-hint');
+
+        docSection.style.display = 'none';
+        otpSection.style.display = 'none';
+
+        if (dtype === 'restaurant') {
+            docSection.style.display = 'block';
+            docLabel.innerHTML = '<i class="fas fa-file-upload" style="color: var(--primary);"></i> Upload FSSAI License';
+            docHint.textContent = 'Restaurants, hotels, and supermarkets must upload a valid FSSAI license for admin verification.';
+        } else if (dtype === 'company') {
+            docSection.style.display = 'block';
+            docLabel.innerHTML = '<i class="fas fa-file-upload" style="color: var(--primary);"></i> Upload GST Certificate / Business Proof';
+            docHint.textContent = 'Companies, corporates, and event organizers must upload a GST certificate or business registration proof.';
+        } else if (dtype === 'individual') {
+            otpSection.style.display = 'block';
+        }
+    }
+
+    var otpVerified = false;
+
+    function sendOTP() {
+        var phone = document.getElementById('phone').value.trim();
+        if (!phone || phone.length < 10) {
+            alert('Please enter a valid phone number first.');
+            return;
+        }
+        var btn = document.getElementById('send-otp-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        fetch('{{ url_for("auth.send_otp") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Resend OTP';
+            btn.disabled = false;
+            if (data.success) {
+                document.getElementById('otp-input-section').style.display = 'block';
+                var statusEl = document.getElementById('otp-status');
+                statusEl.innerHTML = '<span style="color: var(--primary);"><i class="fas fa-info-circle"></i> OTP sent to ' + phone + '</span>';
+                if (data.debug_otp) {
+                    statusEl.innerHTML += '<br><small style="color: #f59e0b;">[Dev mode] OTP: <strong>' + data.debug_otp + '</strong></small>';
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Failed to send OTP'));
+            }
+        })
+        .catch(function() {
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send OTP';
+            btn.disabled = false;
+            alert('Failed to send OTP. Please try again.');
+        });
+    }
+
+    function verifyOTP() {
+        var otp = document.getElementById('otp_code').value.trim();
+        if (!otp || otp.length !== 6) {
+            alert('Please enter the 6-digit OTP.');
+            return;
+        }
+
+        fetch('{{ url_for("auth.verify_otp") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ otp: otp })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var statusEl = document.getElementById('otp-status');
+            if (data.success) {
+                otpVerified = true;
+                statusEl.innerHTML = '<span style="color: var(--success, #28a745);"><i class="fas fa-check-circle"></i> Phone verified successfully!</span>';
+                document.getElementById('otp_code').disabled = true;
+                document.getElementById('send-otp-btn').style.display = 'none';
+            } else {
+                statusEl.innerHTML = '<span style="color: var(--danger, #dc3545);"><i class="fas fa-times-circle"></i> ' + (data.error || 'Invalid OTP') + '</span>';
+            }
+        })
+        .catch(function() {
+            alert('Verification failed. Please try again.');
+        });
+    }
+</script>
+{% endblock %}

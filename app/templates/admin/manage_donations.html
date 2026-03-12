@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Donations - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users"></i> Manage Users <span class="badge" id="badge-manage-users"></span></a></div>
+            <div class="sidebar-item active"><a href=""><i class="fas fa-gift"></i> Manage Donations <span class="badge" id="badge-manage-donations"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_requests') }}"><i class="fas fa-clipboard-list"></i> Manage Requests <span class="badge" id="badge-manage-requests"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_deliveries') }}"><i class="fas fa-truck"></i> Manage Deliveries <span class="badge" id="badge-manage-deliveries"></span></a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-gift" style="color: var(--primary); margin-right: 0.5rem;"></i> Manage Donations</h1>
+            
+            <!-- Filter -->
+            <div style="margin-bottom: 1rem;">
+                <a href="{{ url_for('admin.manage_donations') }}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+                {% for status in statuses %}
+                    <a href="{{ url_for('admin.manage_donations', status=status) }}" class="btn btn-sm {% if status_filter == status %}btn-primary{% else %}btn-secondary{% endif %}">{{ status|upper }}</a>
+                {% endfor %}
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Food Type</th>
+                        <th>Donor</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Expiry Time</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donation in donations.items %}
+                        <tr>
+                            <td>{{ donation.food_type }}</td>
+                            <td>{{ donation.donor.full_name }}</td>
+                            <td>{{ donation.quantity }} {{ donation.unit }}</td>
+                            <td>
+                                <span class="status-badge status-{{ donation.status }}">
+                                    {{ donation.status|upper }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ donation.expiry_time.strftime('%Y-%m-%d %H:%M') }}
+                                {% if donation.status != 'delivered' %}
+                                {% if donation.status == 'expired' %}
+                                    <span class="expiry-badge expiry-expired"><i class="fas fa-times-circle"></i> Expired</span>
+                                {% elif donation.expiry_time <= utcnow %}
+                                    <span class="expiry-badge expiry-expired"><i class="fas fa-times-circle"></i> Expired</span>
+                                {% elif (donation.expiry_time - utcnow).total_seconds() <= 3600 %}
+                                    <span class="expiry-badge expiry-critical"><i class="fas fa-exclamation-triangle"></i> &lt;1hr left</span>
+                                {% elif (donation.expiry_time - utcnow).total_seconds() <= 10800 %}
+                                    <span class="expiry-badge expiry-warning"><i class="fas fa-clock"></i> &lt;3hrs left</span>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ donation.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if donation.status == 'pending' %}
+                                    <button onclick="AdminUtils.approveDonation({{ donation.id }}, '')" class="btn btn-sm btn-primary">Approve</button>
+                                    <button onclick="if(prompt('Reason for rejection:')) AdminUtils.rejectDonation({{ donation.id }}, prompt('Reason'))" class="btn btn-sm btn-danger">Reject</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if donations.has_prev %}
+                    <a href="{{ url_for('admin.manage_donations', page=donations.prev_num, status=status_filter) }}">Previous</a>
+                {% endif %}
+                
+                {% for page_num in donations.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == donations.page %}
+                            <span class="active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('admin.manage_donations', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if donations.has_next %}
+                    <a href="{{ url_for('admin.manage_donations', page=donations.next_num, status=status_filter) }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback Received - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-hand-holding-heart" style="color: var(--primary);"></i> Donor Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('donor.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('donor.create_listing') }}"><i class="fas fa-plus-circle"></i> Create Listing</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('donor.notifications') }}"><i class="fas fa-bell"></i> Notifications <span class="badge" id="badge-donor-notifications"></span></a></div>
+            <div class="sidebar-item active"><a href="{{ url_for('donor.feedback_received') }}"><i class="fas fa-star"></i> Feedback</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i> Profile</a></div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-star" style="color: var(--secondary);"></i> Feedback Received</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">See what NGOs and Volunteers said about your donations</p>
+
+            {% if feedbacks %}
+                {% for fb in feedbacks %}
+                    <div class="feedback-received-card">
+                        <div class="fb-header">
+                            <span class="fb-from">{{ fb.from_user.full_name }}
+                                {% if fb.from_user.organization_name %}
+                                    ({{ fb.from_user.organization_name }})
+                                {% endif %}
+                            </span>
+                            <span class="fb-type">
+                                {% if fb.feedback_type == 'ngo_to_donor' %}NGO Feedback
+                                {% elif fb.feedback_type == 'volunteer_to_donor' %}Volunteer Feedback
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="fb-stars">{{ '★' * fb.rating }}{{ '☆' * (5 - fb.rating) }}</div>
+                        {% if fb.comment %}
+                            <p class="fb-comment">{{ fb.comment }}</p>
+                        {% endif %}
+                        <p class="fb-date">{{ fb.created_at.strftime('%B %d, %Y at %H:%M') }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: var(--text-muted); padding: 2rem; text-align: center;">
+                    <i class="fas fa-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.4;"></i>
+                    No feedback received yet.
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

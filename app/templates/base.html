@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EXCESSBITE - Reduce Food Waste{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="navbar">
+            <a href="{{ url_for('main.home') }}" class="navbar-brand">🥗 EXCESSBITE</a>
+            <div class="hamburger" onclick="this.classList.toggle('active'); document.querySelector('.navbar-menu').classList.toggle('open');">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="navbar-menu">
+                <a href="{{ url_for('main.home') }}"><i class="fas fa-home"></i> Home</a>
+                <a href="{{ url_for('main.about') }}"><i class="fas fa-leaf"></i> About</a>
+                <a href="{{ url_for('main.how_it_works') }}"><i class="fas fa-info-circle"></i> How It Works</a>
+                <a href="{{ url_for('main.contact') }}"><i class="fas fa-envelope"></i> Contact</a>
+                <div id="auth-btn" style="display: flex; align-items: center; gap: 0.5rem;">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-sm btn-outline" style="border-radius: 999px;"><i class="fas fa-user"></i> {{ current_user.full_name }}</a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-danger" style="border-radius: 999px;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline" style="border-radius: 999px;">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary" style="border-radius: 999px;">Register</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container" style="margin-top: 1rem;">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'error' else 'info' }}">
+                        <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' if category == 'error' else 'info-circle' }}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">🥗 EXCESSBITE</p>
+            <p>&copy; 2026 EXCESSBITE &middot; From Excess to Access</p>
+            <p style="margin-top: 0.75rem; font-size: 0.82rem; opacity: 0.6;">Reducing food waste, one meal at a time.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.AOS) AOS.init({ duration: 700, once: true, offset: 60 });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

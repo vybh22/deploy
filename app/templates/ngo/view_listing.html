@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}View Listing - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <a href="{{ url_for('ngo.browse_listings') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Browse</a>
+    <div class="grid grid-2">
+        <!-- Listing Details -->
+        <div class="card">
+            <h2>{{ donation.food_type }}</h2>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Total Quantity:</strong> {{ donation.quantity }} {{ donation.unit }}
+            </div>
+
+            <div style="margin: 1rem 0;">
+                <strong>Available:</strong>
+                <span style="font-size: 1.1rem; font-weight: 700; color: {{ '#16a34a' if available_quantity > 0 else '#dc2626' }};">{{ available_quantity }} {{ donation.unit }}</span>
+                {% if available_quantity < donation.quantity %}
+                    <span style="color: var(--text-muted); font-size: 0.85rem;"> of {{ donation.quantity }}</span>
+                {% endif %}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Description:</strong> {{ donation.description }}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Expiry Time:</strong> {{ donation.expiry_time.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Pickup Address:</strong> {{ donation.pickup_address }}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Contact:</strong> {{ donor.phone }}
+            </div>
+            
+            {% if not existing_request %}
+                <div style="margin-top: 2rem;">
+                    <label for="quantity">How many packets do you need?</label>
+                    <input type="number" id="quantity" min="1" max="{{ available_quantity }}" value="1">
+                    <button onclick="NGOUtils.requestFood({{ donation.id }}, document.getElementById('quantity').value)" class="btn btn-primary btn-block" style="margin-top: 1rem;">Request This Food</button>
+                </div>
+            {% else %}
+                <div style="margin-top: 2rem; padding: 1rem; background-color: #d5f4e6; border-radius: 4px;">
+                    <strong>You have already requested this donation</strong>
+                    <p>Status: {{ existing_request.status|upper }}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Map -->
+        <div class="card">
+            <h3>Pickup Location</h3>
+            <div id="map" data-latitude="{{ donation.latitude or '' }}" data-longitude="{{ donation.longitude or '' }}" style="height: 400px; margin-top: 1rem; border-radius: 4px;"></div>
+            <div style="margin-top: 1rem; padding: 1rem; background-color: #e8f4f8; border-radius: 4px;">
+                <strong>📍 Address:</strong>
+                <p>{{ donation.pickup_address }}</p>
+                <a href="https://www.google.com/maps/search/{{ donation.pickup_address|urlencode }}" target="_blank" class="btn btn-small" style="margin-top: 0.5rem;">📍 View on Google Maps</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function initializeDonationMap() {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('Map element not found');
+            return;
+        }
+        
+        // Check if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet not loaded yet, retrying...');
+            setTimeout(initializeDonationMap, 500);
+            return;
+        }
+        
+        try {
+            // Get coordinates from data attributes
+            const lat = parseFloat(mapElement.getAttribute('data-latitude'));
+            const lng = parseFloat(mapElement.getAttribute('data-longitude'));
+            
+            console.log('Coordinates:', lat, lng);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error('Invalid coordinates:', lat, lng);
+                mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Location coordinates not available. Please use the address card or Google Maps link below.</p>';
+                return;
+            }
+            
+            console.log('Initializing map with coordinates:', lat, lng);
+            const map = initMap('map', {
+                zoom: 15,
+                center: [lat, lng]
+            });
+            
+            if (map) {
+                console.log('Map initialized, adding marker');
+                const address = {{ donation.pickup_address|tojson|safe }};
+                addMarker(map, lat, lng, address);
+                console.log('Map ready with marker');
+            } else {
+                console.error('Map initialization returned null');
+                mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Unable to load map. Please use the address card or Google Maps link below.</p>';
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Error: ' + error.message + '</p>';
+        }
+    }
+    
+    // Start initialization after a short delay to ensure DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeDonationMap, 100);
+        });
+    } else {
+        setTimeout(initializeDonationMap, 100);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Logistics Dashboard - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-truck" style="color: var(--primary);"></i> Logistics Menu</div>
+            <div class="sidebar-item active"><a href="{{ url_for('logistics.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('logistics.notifications') }}"><i class="fas fa-bell"></i> Notifications <span class="badge" id="badge-logistics-notifications"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('logistics.feedback_received') }}"><i class="fas fa-star"></i> Feedback</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i> Profile</a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1>Delivery Dashboard</h1>
+            
+            <!-- Availability Toggle -->
+            <div class="card" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem;">
+                <div>
+                    <strong><i class="fas fa-signal"></i> Your Availability Status</strong>
+                    <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">
+                        When unavailable, admins cannot assign new deliveries to you.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span id="availabilityLabel" style="font-weight: bold; color: {% if current_user.is_available %}var(--success, #28a745){% else %}var(--danger, #dc3545){% endif %};">
+                        {% if current_user.is_available %}Available{% else %}Unavailable{% endif %}
+                    </span>
+                    <label style="position: relative; display: inline-block; width: 52px; height: 28px; cursor: pointer;">
+                        <input type="checkbox" id="availabilityToggle" {% if current_user.is_available %}checked{% endif %} 
+                               style="opacity: 0; width: 0; height: 0;" onchange="toggleAvailability()">
+                        <span style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: {% if current_user.is_available %}var(--success, #28a745){% else %}#ccc{% endif %}; border-radius: 28px; transition: 0.3s;" id="toggleSlider"></span>
+                        <span style="position: absolute; height: 22px; width: 22px; left: {% if current_user.is_available %}26px{% else %}3px{% endif %}; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.3s;" id="toggleDot"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-bottom: 2rem; background-color: #f8f9fa;">
+                <h3>Pickup & Delivery Process</h3>
+                <p>Logistics volunteers pick up food from donors and deliver it to NGOs, updating the status at each step. Track your assigned deliveries below and use the "View" button to see details and update status.</p>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_assigned }}</div>
+                    <div class="stat-label">Total Assigned</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.in_progress }}</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.pending_pickup }}</div>
+                    <div class="stat-label">Pending Pickup</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.completed }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.failed }}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+            
+            <!-- Deliveries -->
+            <h2 style="margin-top: 2rem;">Your Deliveries</h2>
+            
+            {% if deliveries %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Food Type</th>
+                            <th>Donor</th>
+                            <th>NGO</th>
+                            <th>Distance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for delivery in deliveries %}
+                            <tr>
+                                <td>{{ delivery.donation.food_type }}</td>
+                                <td>{{ delivery.donation.donor.full_name }}</td>
+                                <td>{{ delivery.ngo_recipient.organization_name }}</td>
+                                <td>
+                                    <span class="distance-cell" 
+                                          data-pickup-lat="{{ delivery.donation.latitude }}" 
+                                          data-pickup-lng="{{ delivery.donation.longitude }}"
+                                          data-delivery-lat="{{ delivery.ngo_recipient.latitude }}"
+                                          data-delivery-lng="{{ delivery.ngo_recipient.longitude }}">
+                                        <i class="fas fa-spinner fa-spin" style="color: var(--text-muted);"></i>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ delivery.status }}">
+                                        {{ delivery.status|upper }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('logistics.view_delivery', delivery_id=delivery.id) }}" class="btn btn-sm btn-secondary">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No deliveries assigned yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script>
+    function toggleAvailability() {
+        fetch('{{ url_for("logistics.toggle_availability") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const label = document.getElementById('availabilityLabel');
+                const slider = document.getElementById('toggleSlider');
+                const dot = document.getElementById('toggleDot');
+                if (data.is_available) {
+                    label.textContent = 'Available';
+                    label.style.color = 'var(--success, #28a745)';
+                    slider.style.backgroundColor = 'var(--success, #28a745)';
+                    dot.style.left = '26px';
+                } else {
+                    label.textContent = 'Unavailable';
+                    label.style.color = 'var(--danger, #dc3545)';
+                    slider.style.backgroundColor = '#ccc';
+                    dot.style.left = '3px';
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Failed to update availability'));
+                // Revert checkbox
+                document.getElementById('availabilityToggle').checked = !document.getElementById('availabilityToggle').checked;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update availability');
+            document.getElementById('availabilityToggle').checked = !document.getElementById('availabilityToggle').checked;
+        });
+    }
+
+    updateUserLocation().catch(err => console.log('Location update skipped'));
+
+    // Calculate distances for each delivery row
+    document.querySelectorAll('.distance-cell').forEach(async (cell) => {
+        const pLat = parseFloat(cell.dataset.pickupLat);
+        const pLng = parseFloat(cell.dataset.pickupLng);
+        const dLat = parseFloat(cell.dataset.deliveryLat);
+        const dLng = parseFloat(cell.dataset.deliveryLng);
+        if (!isNaN(pLat) && !isNaN(pLng) && !isNaN(dLat) && !isNaN(dLng)) {
+            try {
+                const result = await calculateDistance(pLat, pLng, dLat, dLng);
+                if (result && result.distance_km !== undefined) {
+                    cell.innerHTML = '<i class="fas fa-route" style="margin-right:0.3rem;color:var(--primary);"></i>' + result.distance_km.toFixed(2) + ' km';
+                } else {
+                    cell.textContent = 'N/A';
+                }
+            } catch (e) {
+                cell.textContent = 'N/A';
+            }
+        } else {
+            cell.textContent = 'N/A';
+        }
+    });
+</script>
+{% endblock %}

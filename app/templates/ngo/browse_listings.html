@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Food - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-building" style="color: var(--primary);"></i> NGO Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('ngo.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item active"><a href=""><i class="fas fa-search"></i> Browse Food</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('ngo.notifications') }}"><i class="fas fa-bell"></i> Notifications</a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-utensils" style="color: var(--primary); margin-right: 0.5rem;"></i> Available Food Donations</h1>
+            
+            <div style="margin-bottom: 2rem;">
+                <form method="GET" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem;">
+                    <input type="text" name="q" placeholder="Search food type..." value="{{ request.args.get('q', '') }}">
+                    <input type="text" name="city" placeholder="Filter by city..." value="{{ request.args.get('city', '') }}">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+            </div>
+            
+            {% if donations.items %}
+                <div class="grid grid-2">
+                    {% for donation in donations.items %}
+                        <div class="card" data-aos="fade-up">
+                            <h3><i class="fas fa-drumstick-bite" style="color: var(--primary); margin-right: 0.5rem;"></i>{{ donation.food_type }}</h3>
+                            <p><i class="fas fa-boxes" style="color: var(--accent); width: 20px;"></i> <strong>Available:</strong> {{ donation.available_quantity if donation.available_quantity is not none else donation.quantity }} of {{ donation.quantity }} packets</p>
+                            <p><i class="fas fa-city" style="color: var(--accent); width: 20px;"></i> <strong>City:</strong> {{ donation.city }}</p>
+                            <p><i class="fas fa-user" style="color: var(--accent); width: 20px;"></i> <strong>Donor:</strong> {{ donation.donor.full_name }}</p>
+                            <p><i class="fas fa-clock" style="color: var(--danger); width: 20px;"></i> <strong>Expiry:</strong> {{ donation.expiry_time.strftime('%Y-%m-%d %H:%M') }}
+                                {% if (donation.expiry_time - utcnow).total_seconds() <= 3600 %}
+                                    <span class="expiry-badge expiry-critical"><i class="fas fa-exclamation-triangle"></i> &lt;1hr left</span>
+                                {% elif (donation.expiry_time - utcnow).total_seconds() <= 10800 %}
+                                    <span class="expiry-badge expiry-warning"><i class="fas fa-clock"></i> &lt;3hrs left</span>
+                                {% endif %}
+                            </p>
+                            <a href="{{ url_for('ngo.view_listing', listing_id=donation.id) }}" class="btn btn-primary btn-block" style="margin-top: 1rem;">View Details</a>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination" style="margin-top: 2rem;">
+                    {% if donations.has_prev %}
+                        <a href="{{ url_for('ngo.browse_listings', page=donations.prev_num, q=request.args.get('q', ''), city=request.args.get('city', '')) }}">Previous</a>
+                    {% endif %}
+                    
+                    {% for page_num in donations.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == donations.page %}
+                                <span class="active">{{ page_num }}</span>
+                            {% else %}
+                                <a href="{{ url_for('ngo.browse_listings', page=page_num, q=request.args.get('q', ''), city=request.args.get('city', '')) }}">{{ page_num }}</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if donations.has_next %}
+                        <a href="{{ url_for('ngo.browse_listings', page=donations.next_num, q=request.args.get('q', ''), city=request.args.get('city', '')) }}">Next</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                {% if request.args.get('q') or request.args.get('city') %}
+                    <div class="alert alert-info">
+                        <p>No food donations found matching your search criteria.</p>
+                        <p>Try adjusting your search terms or check back later for new listings.</p>
+                        <a href="{{ url_for('ngo.browse_listings') }}" class="btn btn-outline">Clear Filters</a>
+                    </div>
+                {% else %}
+                    <p>No donations available right now. Check back later!</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

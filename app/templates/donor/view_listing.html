@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}View Listing - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <a href="{{ url_for('donor.dashboard') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    <div class="grid grid-2">
+        <!-- Listing Details -->
+        <div class="card">
+            <h2>{{ donation.food_type }}</h2>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Quantity:</strong> {{ donation.quantity }} {{ donation.unit }}
+                {% if donation.available_quantity is not none and donation.available_quantity != donation.quantity %}
+                    <span style="margin-left: 0.5rem; padding: 0.15rem 0.5rem; background: #dbeafe; color: #1e40af; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        {{ donation.available_quantity }} available
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Description:</strong> {{ donation.description }}
+            </div> 
+                <span class="status-badge status-{{ donation.status }}">
+                    {{ donation.status|upper }}
+                </span>
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Expiry Time:</strong> {{ donation.expiry_time.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Pickup Date:</strong> {{ donation.pickup_date }}
+            </div>
+            
+            <div style="margin: 1rem 0;">
+                <strong>Pickup Address:</strong> {{ donation.pickup_address }}
+            </div>
+            
+            {% set delivered_deliveries = deliveries|selectattr('status', 'equalto', 'delivered')|list %}
+            {% if delivered_deliveries %}
+                <!-- Feedback Section -->
+                <div class="feedback-section" style="margin-top: 1.5rem;">
+                    <h3><i class="fas fa-star"></i> Give Feedback</h3>
+
+                    {% for dlv in delivered_deliveries %}
+                        <!-- Donor → NGO -->
+                        <div class="feedback-card" id="fb-donor-ngo-{{ dlv.id }}">
+                            <h4>Rate NGO: {{ dlv.ngo_recipient.organization_name }}</h4>
+                            <p class="feedback-hint">Rate how quickly the NGO responded and handled the food donation</p>
+                            {% if given_feedback.get((dlv.id, 'donor_to_ngo')) %}
+                                <div class="feedback-submitted">
+                                    <i class="fas fa-check-circle"></i> Submitted
+                                    <span class="stars-display">{{ '★' * given_feedback[(dlv.id, 'donor_to_ngo')].rating }}{{ '☆' * (5 - given_feedback[(dlv.id, 'donor_to_ngo')].rating) }}</span>
+                                </div>
+                            {% else %}
+                                <div class="star-rating">
+                                    {% for i in range(1, 6) %}
+                                        <button type="button" class="star-btn" data-value="{{ i }}">☆</button>
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" class="feedback-rating-input" value="0">
+                                <textarea class="feedback-comment" placeholder="Share your experience with the NGO..."></textarea>
+                                <button onclick="FeedbackUtils.submitDonorFeedback({{ donation.id }}, 'donor_to_ngo', 'fb-donor-ngo-{{ dlv.id }}', {{ dlv.id }})" class="btn btn-primary btn-sm">Submit</button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Donor → Volunteer -->
+                        {% if dlv.logistics_id %}
+                            <div class="feedback-card" id="fb-donor-vol-{{ dlv.id }}">
+                                <h4>Rate Volunteer: {{ dlv.logistics.full_name }}</h4>
+                                <p class="feedback-hint">Rate the pickup experience and professionalism</p>
+                                {% if given_feedback.get((dlv.id, 'donor_to_volunteer')) %}
+                                    <div class="feedback-submitted">
+                                        <i class="fas fa-check-circle"></i> Submitted
+                                        <span class="stars-display">{{ '★' * given_feedback[(dlv.id, 'donor_to_volunteer')].rating }}{{ '☆' * (5 - given_feedback[(dlv.id, 'donor_to_volunteer')].rating) }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="star-rating">
+                                        {% for i in range(1, 6) %}
+                                            <button type="button" class="star-btn" data-value="{{ i }}">☆</button>
+                                        {% endfor %}
+                                    </div>
+                                    <input type="hidden" class="feedback-rating-input" value="0">
+                                    <textarea class="feedback-comment" placeholder="Share your experience with the volunteer..."></textarea>
+                                    <button onclick="FeedbackUtils.submitDonorFeedback({{ donation.id }}, 'donor_to_volunteer', 'fb-donor-vol-{{ dlv.id }}', {{ dlv.id }})" class="btn btn-primary btn-sm">Submit</button>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Map & Requests -->
+        <div>
+            <div class="card" style="margin-bottom: 1rem;">
+                <h3>Pickup Location</h3>
+                <div id="map" data-latitude="{{ donation.latitude or '' }}" data-longitude="{{ donation.longitude or '' }}" style="height: 400px; margin-top: 1rem; border-radius: 4px;"></div>
+                <div style="margin-top: 1rem; padding: 1rem; background-color: #e8f4f8; border-radius: 4px;">
+                    <strong>📍 Address:</strong>
+                    <p>{{ donation.pickup_address }}</p>
+                    <a href="https://www.google.com/maps/search/{{ donation.pickup_address|urlencode }}" target="_blank" class="btn btn-small" style="margin-top: 0.5rem;">📍 View on Google Maps</a>
+                </div>
+            </div>
+            
+            {% if requests %}
+                <div class="card">
+                    <h3>Requests ({{ requests|length }})</h3>
+                    {% for req in requests %}
+                        <div style="padding: 1rem; border-bottom: 1px solid #eee;">
+                            <strong>{{ req.ngo.organization_name }}</strong>
+                            <p>Quantity: {{ req.requested_quantity }} packets</p>
+                            <p>Status: <strong>{{ req.status|upper }}</strong></p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% if deliveries %}
+                {% for delivery in deliveries %}
+                <div class="card" style="margin-bottom: 1rem;">
+                    <h3>Delivery #{{ loop.index }} — {{ delivery.ngo_recipient.organization_name }}</h3>
+                    <p>Status: <strong class="status-badge status-{{ delivery.status }}">{{ delivery.status|upper }}</strong></p>
+                    {% if delivery.pickup_id %}
+                        <p><strong>Pickup ID:</strong> <span style="background: #f0fdf4; color: #166534; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 700; font-family: monospace; font-size: 1.05rem;">{{ delivery.pickup_id }}</span></p>
+                    {% endif %}
+                    {% if delivery.logistics %}
+                        <div style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 10px; border: 1px solid #bbf7d0;">
+                            <h4 style="margin: 0 0 0.5rem; font-size: 1rem;">🚚 Volunteer Details</h4>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                {% if delivery.logistics.profile_photo %}
+                                    <img src="{{ url_for('static', filename=delivery.logistics.profile_photo) }}" alt="Photo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-user"></i></div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ delivery.logistics.full_name }}</strong>
+                                    {% if delivery.logistics.is_verified %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.2rem; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.1rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; margin-left: 0.3rem;">
+                                            <i class="fas fa-check-circle"></i> Verified
+                                        </span>
+                                    {% endif %}
+                                    <br><small style="color: var(--text-muted);">Logistics Volunteer</small>
+                                </div>
+                            </div>
+                            <p style="margin: 0.25rem 0;"><i class="fas fa-phone" style="width: 16px; color: var(--primary);"></i> {{ delivery.logistics.phone }}</p>
+                            {% if delivery.logistics.vehicle_details %}
+                                <p style="margin: 0.25rem 0;"><i class="fas fa-truck" style="width: 16px; color: var(--primary);"></i> {{ delivery.logistics.vehicle_details }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Pickup OTP Section (for assigned deliveries) -->
+                    {% if delivery.status == 'assigned' and delivery.logistics %}
+                        <div style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, #fef3c7, #fef9c3); border-radius: 10px; border: 1px solid #fde68a;">
+                            <h4 style="margin: 0 0 0.5rem; font-size: 1rem;">🔐 Pickup OTP Verification</h4>
+                            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                                Generate an OTP to share with the volunteer when they arrive to pick up the food.
+                            </p>
+                            <div id="pickup-otp-container-{{ delivery.id }}">
+                                {% if delivery.pickup_otp %}
+                                    <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 8px; border: 2px dashed #f59e0b;">
+                                        <small style="color: var(--text-muted);">Share this OTP with the volunteer</small>
+                                        <div style="font-size: 2rem; font-weight: 800; letter-spacing: 0.5rem; color: #d97706; font-family: monospace;">{{ delivery.pickup_otp }}</div>
+                                    </div>
+                                {% else %}
+                                    <button onclick="generatePickupOTP({{ delivery.id }})" class="btn btn-primary btn-sm" id="gen-otp-btn-{{ delivery.id }}">
+                                        <i class="fas fa-key"></i> Generate Pickup OTP
+                                    </button>
+                                    <div id="otp-display-{{ delivery.id }}" style="display: none; text-align: center; padding: 0.75rem; background: white; border-radius: 8px; border: 2px dashed #f59e0b; margin-top: 0.5rem;">
+                                        <small style="color: var(--text-muted);">Share this OTP with the volunteer</small>
+                                        <div id="otp-value-{{ delivery.id }}" style="font-size: 2rem; font-weight: 800; letter-spacing: 0.5rem; color: #d97706; font-family: monospace;"></div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if delivery.pickup_time %}
+                        <p style="margin-top: 0.5rem;">Picked up: {{ delivery.pickup_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                    {% endif %}
+                    {% if delivery.delivery_time %}
+                        <p>Delivered: {{ delivery.delivery_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script>
+    function initializeDonationMap() {
+        const mapElement = document.getElementById('map');
+        if (!mapElement) {
+            console.error('Map element not found');
+            return;
+        }
+        
+        // Check if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet not loaded yet, retrying...');
+            setTimeout(initializeDonationMap, 500);
+            return;
+        }
+        
+        try {
+            // Get coordinates from data attributes
+            const lat = parseFloat(mapElement.getAttribute('data-latitude'));
+            const lng = parseFloat(mapElement.getAttribute('data-longitude'));
+            
+            console.log('Coordinates:', lat, lng);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error('Invalid coordinates:', lat, lng);
+                mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Location coordinates not available. Please use the address card or Google Maps link below.</p>';
+                return;
+            }
+            
+            console.log('Initializing map with coordinates:', lat, lng);
+            const map = initMap('map', {
+                zoom: 15,
+                center: [lat, lng]
+            });
+            
+            if (map) {
+                console.log('Map initialized, adding marker');
+                const address = {{ donation.pickup_address|tojson|safe }};
+                addMarker(map, lat, lng, address);
+                console.log('Map ready with marker');
+            } else {
+                console.error('Map initialization returned null');
+                mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Unable to load map. Please use the address card or Google Maps link below.</p>';
+            }
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            mapElement.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">Error: ' + error.message + '</p>';
+        }
+    }
+    
+    // Start initialization after a short delay to ensure DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeDonationMap, 100);
+        });
+    } else {
+        setTimeout(initializeDonationMap, 100);
+    }
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    FeedbackUtils.initStarRating('fb-donor-ngo');
+    FeedbackUtils.initStarRating('fb-donor-vol');
+    {% for dlv in deliveries if dlv.status == 'delivered' %}
+    FeedbackUtils.initStarRating('fb-donor-ngo-{{ dlv.id }}');
+    FeedbackUtils.initStarRating('fb-donor-vol-{{ dlv.id }}');
+    {% endfor %}
+    
+    async function generatePickupOTP(deliveryId) {
+        try {
+            var btn = document.getElementById('gen-otp-btn-' + deliveryId);
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            
+            const response = await fetch('/donor/delivery/' + deliveryId + '/generate-otp', { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.success) {
+                btn.style.display = 'none';
+                var display = document.getElementById('otp-display-' + deliveryId);
+                document.getElementById('otp-value-' + deliveryId).textContent = data.otp;
+                display.style.display = 'block';
+                showNotification('OTP Generated', 'Share this OTP with the volunteer: ' + data.otp, 'success');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-key"></i> Generate Pickup OTP';
+                showNotification('Error', data.error || 'Failed to generate OTP', 'danger');
+            }
+        } catch (e) {
+            showNotification('Error', 'Failed to generate OTP', 'danger');
+        }
+    }
+</script>
+{% endblock %}

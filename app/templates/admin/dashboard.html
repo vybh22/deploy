@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item active"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_users') }}"><i class="fas fa-users"></i> Manage Users <span class="badge" id="badge-manage-users"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_donations') }}"><i class="fas fa-gift"></i> Manage Donations <span class="badge" id="badge-manage-donations"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_requests') }}"><i class="fas fa-clipboard-list"></i> Manage Requests <span class="badge" id="badge-manage-requests"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.reports') }}"><i class="fas fa-chart-bar"></i> Reports</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.audit_log') }}"><i class="fas fa-history"></i> Audit Log</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.contact_messages') }}"><i class="fas fa-envelope"></i> Contact Messages <span class="badge" id="badge-contact-messages"></span></a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 0.5rem;"></i> Admin Dashboard</h1>
+            
+            <!-- Quick Stats -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_donations }}</div>
+                    <div class="stat-label">Total Donations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_users }}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_ngos }}</div>
+                    <div class="stat-label">Active NGOs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_donors }}</div>
+                    <div class="stat-label">Registered Donors</div>
+                </div>
+            </div>
+            
+            <!-- Impact Stats -->
+            <div class="stats-container" style="margin-top: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.delivered_packets }}</div>
+                    <div class="stat-label">Packets Delivered</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.delivery_success_rate }}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.co2_reduction }} kg</div>
+                    <div class="stat-label">CO2 Reduction</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_deliveries }}</div>
+                    <div class="stat-label">Total Deliveries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: var(--danger);">{{ stats.expired_donations }}</div>
+                    <div class="stat-label">Expired Donations</div>
+                </div>
+            </div>
+            
+            <!-- Pending Actions -->
+            <h2 style="margin-top: 2rem;">Pending Actions</h2>
+            <div class="grid grid-3">
+                <div class="card">
+                    <div class="stat-value" style="color: var(--warning-color);">{{ pending_approvals }}</div>
+                    <div class="stat-label">Pending Donation Approvals</div>
+                    <a href="{{ url_for('admin.manage_donations', status='pending') }}" class="btn btn-sm btn-primary" style="margin-top: 1rem;">Review</a>
+                </div>
+                <div class="card">
+                    <div class="stat-value" style="color: var(--warning-color);">{{ pending_user_approvals }}</div>
+                    <div class="stat-label">Pending User Approvals</div>
+                    <a href="{{ url_for('admin.manage_users', role='ngo') }}" class="btn btn-sm btn-primary" style="margin-top: 1rem;">Review</a>
+                </div>
+                <div class="card">
+                    <div class="stat-value" style="color: var(--warning-color);">{{ pending_requests }}</div>
+                    <div class="stat-label">Pending Requests</div>
+                    <a href="{{ url_for('admin.manage_requests') }}" class="btn btn-sm btn-primary" style="margin-top: 1rem;">Review</a>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <h2 style="margin-top: 2rem;">Recent Donations</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Food Type</th>
+                        <th>Donor</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Expiry</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donation in recent_donations %}
+                        <tr>
+                            <td>{{ donation.food_type }}</td>
+                            <td>{{ donation.donor.full_name }}</td>
+                            <td>{{ donation.quantity }}</td>
+                            <td>
+                                <span class="status-badge status-{{ donation.status }}">{{ donation.status|upper }}</span>
+                            </td>
+                            <td>
+                                {{ donation.expiry_time.strftime('%Y-%m-%d %H:%M') }}
+                                {% if donation.status != 'delivered' %}
+                                {% if donation.status == 'expired' %}
+                                    <span class="expiry-badge expiry-expired"><i class="fas fa-times-circle"></i> Expired</span>
+                                {% elif donation.expiry_time <= utcnow %}
+                                    <span class="expiry-badge expiry-expired"><i class="fas fa-times-circle"></i> Expired</span>
+                                {% elif (donation.expiry_time - utcnow).total_seconds() <= 3600 %}
+                                    <span class="expiry-badge expiry-critical"><i class="fas fa-exclamation-triangle"></i> &lt;1hr left</span>
+                                {% elif (donation.expiry_time - utcnow).total_seconds() <= 10800 %}
+                                    <span class="expiry-badge expiry-warning"><i class="fas fa-clock"></i> &lt;3hrs left</span>
+                                {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ donation.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

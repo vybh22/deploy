@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}About - EXCESSBITE{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<section class="hero" style="padding: 4rem 1rem; clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);">
+    <div class="container" style="position: relative; z-index: 2;">
+        <a href="{{ url_for('main.home') }}" class="back-btn" style="color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); margin-bottom: 1.5rem;"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        <h1 style="font-family: 'Playfair Display', serif;"><i class="fas fa-leaf"></i> About EXCESSBITE</h1>
+        <p style="max-width: 600px; margin: 0 auto; opacity: 0.9;">Building bridges between surplus food and communities in need</p>
+    </div>
+</section>
+
+<section class="container" style="margin: 3rem auto;">
+    <div class="card" style="margin-bottom: 2rem;" data-aos="fade-up">
+        <div style="display: flex; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap;">
+            <div style="width: 56px; height: 56px; background: var(--gradient-primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; flex-shrink: 0; box-shadow: 0 6px 20px rgba(16,185,129,0.25);">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <div>
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.75rem;">Our Mission</h2>
+                <p style="color: var(--text-secondary); line-height: 1.8;">EXCESSBITE is a digital platform dedicated to reducing food waste by creating a seamless connection between food donors and NGOs. We believe that surplus food from restaurants, hotels, and other establishments should never go to waste when there are communities in need.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-bottom: 2rem;" data-aos="fade-up" data-aos-delay="100">
+        <div style="display: flex; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; flex-shrink: 0; box-shadow: 0 6px 20px rgba(99,102,241,0.25);">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div>
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.75rem;">What We Do</h2>
+                <ul style="margin-left: 1.25rem; color: var(--text-secondary); line-height: 2;">
+                    <li>Enable donors to list surplus food from their establishments</li>
+                    <li>Connect NGOs with available food donations</li>
+                    <li>Coordinate logistics for timely food delivery</li>
+                    <li>Track the entire delivery process from pickup to distribution</li>
+                    <li>Measure the environmental and social impact of our work</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-2" style="margin-top: 2rem;">
+        <div class="card" data-aos="fade-up" data-aos-delay="200" style="text-align: center; padding: 2.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🌍</div>
+            <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Environment</h3>
+            <p style="color: var(--text-secondary);">Every meal saved from waste reduces carbon emissions and helps build a sustainable future.</p>
+        </div>
+        <div class="card" data-aos="fade-up" data-aos-delay="300" style="text-align: center; padding: 2.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤝</div>
+            <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Community</h3>
+            <p style="color: var(--text-secondary);">We ensure underprivileged communities have access to nutritious food regardless of their economic situation.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

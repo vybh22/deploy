@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Create Listing - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-hand-holding-heart" style="color: var(--primary);"></i> Donor Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('donor.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item active"><a href="{{ url_for('donor.create_listing') }}"><i class="fas fa-plus-circle"></i> Create Listing</a></div>
+            <div class="sidebar-item"><a href="{{ url_for('donor.notifications') }}"><i class="fas fa-bell"></i> Notifications</a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-utensils" style="color: var(--primary); margin-right: 0.5rem;"></i> Create Food Listing</h1>
+            
+            {% if errors %}
+                <div class="form-error">
+                    <strong>Please fix the following errors:</strong>
+                    <ul>
+                        {% for error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            
+            <form method="POST">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="food_type">Food Type *</label>
+                        <input type="text" id="food_type" name="food_type" placeholder="e.g., Cooked Rice, Biryani, Vegetables" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quantity">Quantity (packets) *</label>
+                        <input type="number" id="quantity" name="quantity" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Describe the food, ingredients, etc."></textarea>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="expiry_time">Expiry Date & Time *</label>
+                        <input type="datetime-local" id="expiry_time" name="expiry_time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pickup_date">Pickup Date *</label>
+                        <input type="date" id="pickup_date" name="pickup_date" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="pickup_start_time">Pickup Start Time *</label>
+                        <input type="time" id="pickup_start_time" name="pickup_start_time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pickup_end_time">Pickup End Time *</label>
+                        <input type="time" id="pickup_end_time" name="pickup_end_time" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pickup_address">Pickup Address *</label>
+                    <textarea id="pickup_address" name="pickup_address" required>{{ donor.address or '' }}</textarea>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" id="city" name="city" value="{{ donor.city or '' }}" placeholder="e.g., Delhi, Mumbai">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Click on the map to set pickup location *</label>
+                    <div id="map" style="height: 300px; margin-top: 1rem;"></div>
+                    <input type="hidden" id="latitude" name="latitude" value="{{ donor.latitude or '' }}" required>
+                    <input type="hidden" id="longitude" name="longitude" value="{{ donor.longitude or '' }}" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg">Create Listing</button>
+                <a href="{{ url_for('donor.dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
+            </form>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Set Google Maps API key from server (make available as global)
+    window.GOOGLE_MAPS_KEY = '{{ google_maps_key }}';
+
+    var listingMap = null;
+    var listingMarker = null;
+
+    function setListingLocation(lat, lng) {
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        if (listingMarker) listingMap.removeLayer(listingMarker);
+        listingMarker = L.marker([lat, lng]).addTo(listingMap).bindPopup('Pickup Location').openPopup();
+        listingMap.setView([lat, lng], 15);
+    }
+
+    function fetchWithTimeout(url, ms) {
+        return new Promise(function(resolve, reject) {
+            var timer = setTimeout(function() { reject(new Error('timeout')); }, ms);
+            fetch(url).then(function(r) { clearTimeout(timer); resolve(r); })
+                      .catch(function(e) { clearTimeout(timer); reject(e); });
+        });
+    }
+
+    function getLocationFromIP() {
+        var providers = [
+            { url: 'https://ipapi.co/json/',
+              parse: function(d) { return (d.latitude && d.longitude) ? { lat: d.latitude, lng: d.longitude, city: d.city || '' } : null; } },
+            { url: 'https://ipwho.is/',
+              parse: function(d) { return (d.success !== false && d.latitude) ? { lat: d.latitude, lng: d.longitude, city: d.city || '' } : null; } },
+            { url: 'https://freeipapi.com/api/json',
+              parse: function(d) { return d.latitude ? { lat: d.latitude, lng: d.longitude, city: d.cityName || '' } : null; } }
+        ];
+        var idx = 0;
+        function tryNext() {
+            if (idx >= providers.length) return Promise.resolve(null);
+            var p = providers[idx++];
+            return fetchWithTimeout(p.url, 6000)
+                .then(function(r) { return r.json(); })
+                .then(function(data) { var res = p.parse(data); return res ? res : tryNext(); })
+                .catch(function() { return tryNext(); });
+        }
+        return tryNext();
+    }
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        var R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+        var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+                Math.sin(dLon/2)*Math.sin(dLon/2);
+        return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    }
+
+    function reverseGeocodeNominatim(lat, lng) {
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&addressdetails=1', {
+            headers: { 'Accept-Language': 'en' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.address) {
+                var a = data.address, parts = [];
+                if (a.house_number) parts.push(a.house_number);
+                if (a.road) parts.push(a.road);
+                if (a.neighbourhood || a.suburb) parts.push(a.neighbourhood || a.suburb);
+                if (a.city || a.town || a.village) parts.push(a.city || a.town || a.village);
+                if (a.state) parts.push(a.state);
+                if (a.postcode) parts.push(a.postcode);
+                var addrField = document.getElementById('pickup_address');
+                var cityField = document.getElementById('city');
+                if (parts.length) addrField.value = parts.join(', ');
+                cityField.value = a.city || a.town || a.village || a.county || '';
+            }
+        }).catch(function() {});
+    }
+
+    function initCreateListingMap() {
+        if (typeof L === 'undefined') {
+            setTimeout(initCreateListingMap, 300);
+            return;
+        }
+
+        var mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        // Create map directly
+        listingMap = L.map('map').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+        }).addTo(listingMap);
+        setTimeout(function() { listingMap.invalidateSize(); }, 200);
+
+        // Click to set location
+        listingMap.on('click', function(e) {
+            setListingLocation(e.latlng.lat, e.latlng.lng);
+            reverseGeocodeNominatim(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Check if lat/lng already set (from donor profile)
+        var latVal = document.getElementById('latitude').value;
+        var lngVal = document.getElementById('longitude').value;
+
+        if (latVal && lngVal && !isNaN(parseFloat(latVal)) && !isNaN(parseFloat(lngVal))) {
+            // Already have coordinates — place marker
+            setListingLocation(parseFloat(latVal), parseFloat(lngVal));
+        } else {
+            // Auto-detect location
+            detectCreateListingLocation();
+        }
+    }
+
+    function detectCreateListingLocation() {
+        // Step 1: IP geolocation first (reliable)
+        getLocationFromIP().then(function(ipLoc) {
+            if (ipLoc) {
+                setListingLocation(ipLoc.lat, ipLoc.lng);
+                listingMap.setView([ipLoc.lat, ipLoc.lng], 13);
+                reverseGeocodeNominatim(ipLoc.lat, ipLoc.lng);
+            }
+
+            // Step 2: Try browser GPS to refine
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        var lat = position.coords.latitude;
+                        var lng = position.coords.longitude;
+                        var acc = position.coords.accuracy;
+                        console.log('[CreateListing] GPS:', lat, lng, 'accuracy:', acc);
+
+                        if (acc < 10000) {
+                            if (ipLoc) {
+                                var dist = haversineKm(lat, lng, ipLoc.lat, ipLoc.lng);
+                                if (dist > 500) {
+                                    console.warn('[CreateListing] GPS disagrees with IP — keeping IP');
+                                    return;
+                                }
+                            }
+                            setListingLocation(lat, lng);
+                            var zoom = acc < 100 ? 17 : acc < 1000 ? 15 : 13;
+                            listingMap.setView([lat, lng], zoom);
+                            reverseGeocodeNominatim(lat, lng);
+
+                            if (typeof showNotification === 'function') {
+                                showNotification('Location Updated',
+                                    'Precise location detected (accuracy: ~' + Math.round(acc) + 'm).',
+                                    'success');
+                            }
+                        }
+                    },
+                    function(err) {
+                        console.warn('[CreateListing] GPS failed:', err.message);
+                        if (!ipLoc && typeof showNotification === 'function') {
+                            showNotification('Location',
+                                'Could not auto-detect. Click on the map to set pickup location.',
+                                'warning');
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            }
+        }).catch(function(e) {
+            console.error('[CreateListing] Detection error:', e);
+        });
+    }
+
+    // Init on ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(initCreateListingMap, 300); });
+    } else {
+        setTimeout(initCreateListingMap, 300);
+    }
+</script>
+{% endblock %}

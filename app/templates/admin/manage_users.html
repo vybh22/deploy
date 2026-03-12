@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - EXCESSBITE{% endblock %}
+
+{% block content %}
+<section class="container" style="margin: 2rem 0;">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div style="font-weight: bold; margin-bottom: 1rem;"><i class="fas fa-shield-alt" style="color: var(--primary);"></i> Admin Menu</div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></div>
+            <div class="sidebar-item active"><a href=""><i class="fas fa-users"></i> Manage Users <span class="badge" id="badge-manage-users"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_donations') }}"><i class="fas fa-gift"></i> Manage Donations <span class="badge" id="badge-manage-donations"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_requests') }}"><i class="fas fa-clipboard-list"></i> Manage Requests <span class="badge" id="badge-manage-requests"></span></a></div>
+            <div class="sidebar-item"><a href="{{ url_for('admin.manage_deliveries') }}"><i class="fas fa-truck"></i> Manage Deliveries <span class="badge" id="badge-manage-deliveries"></span></a></div>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <h1><i class="fas fa-users" style="color: var(--primary); margin-right: 0.5rem;"></i> Manage Users</h1>
+            
+            <!-- Filter -->
+            <div style="margin-bottom: 1rem;">
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm {% if not role_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+                {% for role in roles %}
+                    {% if role != 'admin' %}
+                        <a href="{{ url_for('admin.manage_users', role=role) }}" class="btn btn-sm {% if role_filter == role %}btn-primary{% else %}btn-secondary{% endif %}">{{ role|upper }}</a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Type / Doc</th>
+                        <th>Verified</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users.items %}
+                        <tr>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role|upper }}</td>
+                            <td>
+                                {% if user.role == 'donor' and user.donor_type %}
+                                    {% if user.donor_type == 'restaurant' %}
+                                        <span style="color: #e67e22;">🏨 Restaurant</span>
+                                    {% elif user.donor_type == 'company' %}
+                                        <span style="color: #3498db;">🏢 Company</span>
+                                    {% elif user.donor_type == 'individual' %}
+                                        <span style="color: #9b59b6;">👤 Individual</span>
+                                    {% endif %}
+                                {% elif user.role == 'ngo' and user.ngo_document_type %}
+                                    {% set ngo_doc_labels = {'ngo_registration': '📜 NGO Reg. Cert.', 'trust_society': '📋 Trust/Society', '80g_12a': '📑 80G/12A', 'government_id': '🪪 Govt. ID'} %}
+                                    <span style="color: #2563eb;">{{ ngo_doc_labels.get(user.ngo_document_type, user.ngo_document_type) }}</span>
+                                {% elif user.role == 'logistics' and user.government_id_type %}
+                                    {% set govt_labels = {'aadhar': '🪪 Aadhar', 'driving_license': '🚗 DL'} %}
+                                    <span style="color: #f97316;">{{ govt_labels.get(user.government_id_type, user.government_id_type) }}</span>
+                                    {% if user.vehicle_details %}
+                                        <br><small style="color: #666;">🚚 {{ user.vehicle_details }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #999;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_verified %}
+                                    ✓
+                                {% elif user.role == 'donor' and user.donor_type == 'individual' and user.phone_verified %}
+                                    <span title="Phone OTP verified">📱 OTP ✓</span>
+                                {% else %}
+                                    ✗
+                                {% endif %}
+                            </td>
+                            <td>{{ '✓' if user.is_active else '✗' }}</td>
+                            <td>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                                    {% if not user.is_verified %}
+                                        {% if user.verification_document %}
+                                            <a href="{{ url_for('static', filename=user.verification_document) }}" target="_blank" class="btn btn-sm btn-secondary" title="View uploaded document" style="min-width: 70px; text-align: center;">
+                                                <i class="fas fa-file-alt"></i> Doc
+                                            </a>
+                                        {% endif %}
+                                        {% if user.government_id_document %}
+                                            <a href="{{ url_for('static', filename=user.government_id_document) }}" target="_blank" class="btn btn-sm btn-secondary" title="View Government ID" style="min-width: 70px; text-align: center;">
+                                                <i class="fas fa-id-card"></i> ID
+                                            </a>
+                                        {% endif %}
+                                        {% if user.profile_photo %}
+                                            <a href="{{ url_for('static', filename=user.profile_photo) }}" target="_blank" class="btn btn-sm btn-secondary" title="View Profile Photo" style="min-width: 70px; text-align: center;">
+                                                <i class="fas fa-camera"></i> Photo
+                                            </a>
+                                        {% endif %}
+                                        <button onclick="AdminUtils.approveUser({{ user.id }})" class="btn btn-sm btn-primary" style="min-width: 80px; text-align: center;">Approve</button>
+                                    {% endif %}
+                                    {% if user.is_active and user.role != 'admin' %}
+                                        <button onclick="if(confirm('Deactivate this user?')) AdminUtils.deactivateUser({{ user.id }}, 'Admin action')" class="btn btn-sm btn-danger" style="min-width: 95px; text-align: center;">Deactivate</button>
+                                    {% endif %}
+                                    {% if user.role == 'ngo' and user.address %}
+                                        <form method="POST" action="{{ url_for('admin.regeocode_user', user_id=user.id) }}" style="display:inline;">
+                                            <button type="submit" class="btn btn-sm btn-secondary" title="Re-geocode address to fix map location" style="min-width: 110px; text-align: center;"><i class="fas fa-map-marker-alt"></i> Fix Location</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                {% if users.has_prev %}
+                    <a href="{{ url_for('admin.manage_users', page=users.prev_num, role=role_filter) }}">Previous</a>
+                {% endif %}
+                
+                {% for page_num in users.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == users.page %}
+                            <span class="active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('admin.manage_users', page=page_num, role=role_filter) }}">{{ page_num }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if users.has_next %}
+                    <a href="{{ url_for('admin.manage_users', page=users.next_num, role=role_filter) }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
